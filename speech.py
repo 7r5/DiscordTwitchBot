@@ -56,7 +56,7 @@ def reconocer_audio():
                 sample_width=2,
             )
             try:
-                texto = r.recognize_amazon(audio_data, language="es-MX")
+                texto = r.recognize_google(audio_data, language="es-MX")
                 for palabra in texto.split():
                     last_words.append(palabra)
                 actualizar_archivo()

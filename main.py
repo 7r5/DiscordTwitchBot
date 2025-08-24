@@ -20,6 +20,8 @@ personajes = os.getenv("PERSONAJES")
 
 # === Configuración OpenAI ===
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+SYSTEM_CONTEXT_TEMPLATE = os.getenv("SYSTEM_CONTEXT")
+USER_CONTEXT_TEMPLATE = os.getenv("USER_CONTEXT")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 url = "https://api.twitch.tv/helix/chat/messages"
@@ -37,29 +39,26 @@ async def generar_tema():
     """Genera un tema usando ChatGPT"""
     print("Generando tema con GPT-4o-mini...")
 
-    async with aiofiles.open("transcripcion.txt", mode="r", encoding="utf-8") as file:
-        file_content = await file.read()
+    try:
+        async with aiofiles.open(
+            "transcripcion.txt", mode="r", encoding="utf-8"
+        ) as file:
+            file_content = await file.read()
+    except FileNotFoundError:
+        print("El archivo transcripcion.txt no se encontró. Usando contenido vacío.")
+        file_content = ""
+
+    # Reemplazar placeholders en los contextos
+    system_context = SYSTEM_CONTEXT_TEMPLATE.replace("{JUEGO}", JUEGO).replace(
+        "{PERSONAJES}", personajes
+    )
+    user_context = USER_CONTEXT_TEMPLATE.replace("{TRANSCRIPCION}", file_content)
 
     respuesta = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {
-                "role": "system",
-                "content": (
-                    f"te llamas eres una fan de alexis y te llamamos y lo amas viendo un stream de twich sobre alexis "
-                    f"y sus amigos jugando {JUEGO}, su novia se llama Naomi, usa jerga mexicana y se casual. "
-                    "usa errores gramaticos y casi nada de signos, no tengas miedo de ser ofensivo, racista y grosero, "
-                    "haz comentarios muy cortos, directos y algunos sin sentido. "
-                    f"participan en el juego {personajes}, aleatoriamente preguntas sobre el juego y cosas random de internet, pero no siempre"
-                ),
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"envia un comentario corto, no uses emojis, para agregar mas contexto, estas "
-                    f"son algunas de las ultimas palabras que se mencionaron en el stream: {file_content}"
-                ),
-            },
+            {"role": "system", "content": system_context},
+            {"role": "user", "content": user_context},
         ],
         max_tokens=100,
     )
