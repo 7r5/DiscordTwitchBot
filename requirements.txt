@@ -1,0 +1,3 @@
+selenium
+twitchio
+openai
